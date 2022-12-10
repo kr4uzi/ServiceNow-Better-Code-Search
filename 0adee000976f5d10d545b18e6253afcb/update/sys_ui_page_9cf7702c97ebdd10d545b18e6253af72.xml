@@ -14,7 +14,7 @@ addLoadEvent(function () {
 	});
 	
 	var scopeInput = document.querySelector('#search-form #search-scope');
-	var currentApplicationOption = scopeInput.querySelector('option[value="$[currentApp]"]');
+	var currentApplicationOption = scopeInput.querySelector('option[value="$[JS:gs.getCurrentApplicationId()]"]');
 	if (currentApplicationOption) {
 		currentApplicationOption.setAttribute('selected', 'selected');
 	}
@@ -250,11 +250,7 @@ function searchTable(table, term, scope, allScopes, searchGroup, callback) {
 			});
 		}
 	</g:evaluate>
-	<g2:evaluate>
-		var currentApp = gs.getCurrentApplicationId();
-		var dateStamp = new GlideDateTime().getNumericValue();
-	</g2:evaluate>
-	<link rel="stylesheet" href="15fc716097231150d545b18e6253af08.cssdbx?v=$[dateStamp]" />
+	<link rel="stylesheet" href="15fc716097231150d545b18e6253af08.cssdbx?v=$[new GlideDateTime().getNumericValue()]" />
 	<form id="search-form">
 		<fieldset>
 			<div>

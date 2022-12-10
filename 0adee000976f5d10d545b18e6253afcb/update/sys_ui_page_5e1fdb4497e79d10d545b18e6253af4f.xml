@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
     <sys_ui_page action="INSERT_OR_UPDATE">
         <category>general</category>
-        <client_script><![CDATA[/* global addLoadEvent, gel, getMessage, jslog, GlideAjax, XMLHttpRequest, window */
+        <client_script><![CDATA[/* global addLoadEvent, gel, getMessage, jslog, GlideAjax, XMLHttpRequest, window, setTimeout */
 /* eslint no-undef: "error" */
 addLoadEvent(function () {
 	x_376096_bcs_ValuesChanged();
@@ -59,7 +59,7 @@ function x_376096_bcs_onOK() {
 }
 
 function decryptScriptInclude(scriptIncludeSysID) {
-	var backupTerms = ['GlideRecord', 'GlideRecordSecure', 'gs.', 'JSON', 'for (', 'for(', 'while', '.next', 'if(', 'if (', '.query', '.next', '.addQuery', ': function'];
+	var backupTerms = ['GlideRecord', 'GlideRecordSecure', 'gs.', 'JSON', 'for (', 'for(', 'while', '.next', 'if(', 'if (', '.query', '.next', '.addQuery', ': function', 'Packages'];
 	var maxIterations = 500;
 	
 	getScriptIncludeInfo(scriptIncludeSysID, function (info) {
@@ -76,21 +76,25 @@ function decryptScriptInclude(scriptIncludeSysID) {
 				gel('x_376096_bcs_code_row').style.display = '';
 				var codeNode = gel('x_376096_bcs_code');
 				
-				var code = '';
-				for (var i = 1; i < context.lines.length; i++) {
-					code += 'Line ' + i + ': ';
+				if (context.lines.length) {
+					var code = '';
+					for (var i = 1; i < context.lines.length; i++) {
+						code += 'Line ' + i + ': ';
 
-					if (context.lines[i] === undefined) {
-						code += '/* Unable to decrypt */';
-					} else {
-						code += context.lines[i].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+						if (context.lines[i] === undefined) {
+							code += '/* Unable to decrypt */';
+						} else {
+							code += context.lines[i].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+						}
+
+						code += '<br />';
 					}
 
-					code += '<br />';
+					codeNode.setAttribute('rows', context.lines.length);
+					codeNode.innerHTML = code;
+				} else {
+					codeNode.innerHTML = 'Unable to decrypt Script Include ...';
 				}
-				
-				codeNode.setAttribute('rows', context.lines.length);
-				codeNode.innerHTML = code;
 			}
 		};
 		
@@ -122,23 +126,25 @@ function decryptScriptInclude(scriptIncludeSysID) {
 					}
 				}
 				
-				var filledLines = 0;
 				var hasEmptyLines = false;
 				var maxLines = context.lines.length;
-				// using for... because .some doesnt work here (this will only check actuall existing elements, but we dont have a sparse-array!)
-				for (var lineNum = 1; lineNum < maxLines; lineNum++) {
-					if (context.lines[lineNum] === undefined) {
-						hasEmptyLines = true;
-					} else {
-						filledLines++;
+				if (maxLines) {
+					var filledLines = 0;
+					// using for... because .some doesnt work here (this will only check actuall existing elements, but we dont have a sparse-array!)
+					for (var lineNum = 1; lineNum < maxLines; lineNum++) {
+						if (context.lines[lineNum] === undefined) {
+							hasEmptyLines = true;
+						} else {
+							filledLines++;
+						}
 					}
+					
+					var percentComplete = Math.floor(filledLines / maxLines * 100);
+					progressBar.setAttribute('aria-valuenow', percentComplete);
+					progressBar.style.width = percentComplete + '%';
 				}
 
-				var percentComplete = Math.floor(filledLines / maxLines * 100);
-				progressBar.setAttribute('aria-valuenow', percentComplete);
-				progressBar.style.width = percentComplete + '%';
-
-				if (hasEmptyLines) {
+				if (hasEmptyLines || maxLines == 0) {
 					var bestSearchTerm = context.lines.filter(function (l) { return l !== undefined; }).sort(function (a, b) { return b.length - a.length; }).filter(function (t) { return context.searchedTerms.indexOf(t) === -1; });
 					if (bestSearchTerm.length == 0) {
 						bestSearchTerm = backupTerms.filter(function (t) { return context.searchedTerms.indexOf(t) === -1; });
@@ -150,7 +156,7 @@ function decryptScriptInclude(scriptIncludeSysID) {
 					}
 				}
 				
-				decrypt(context);
+				setTimeout(decrypt.bind(null, context));
 			}, onError);
 		} else {
 			onError('Max iterations!');
